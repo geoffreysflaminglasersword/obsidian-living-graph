@@ -431,7 +431,7 @@ class LivingGraphSettingTab extends PluginSettingTab {
 
 		containerEl.empty();
 
-		containerEl.createEl('h2', { text: 'Settings for PersistentGraphPlugin' });
+		containerEl.createEl('h2', { text: 'Living Graph' });
 
 		new Setting(containerEl)
 			.setName('Presets')
