@@ -1,7 +1,8 @@
 import { App, Plugin, PluginSettingTab, Setting, WorkspaceLeaf } from 'obsidian';
-import { Coefs, Functor, PeriodicFunctory, WaveFunctory, scaledWave, wave } from "Functories";
-import { Interval, iInterval } from "interval";
+import { PeriodicFunctory, WaveFunctory, scaledWave } from "Functories";
 import { getScaleConversion, iGraphSetting, setCenterForce, setLinkDistance, setLinkStrength, setRepelStrength } from "graphManip";
+
+import { Interval } from "interval";
 
 function scaledSine(x: number, min: number, max: number, delta: number) {
 	return min + (max - min) * Math.sin(x);
@@ -336,13 +337,11 @@ export default class LivingGraphPlugin extends Plugin {
 	activeGraphSetting: iGraphSetting;
 
 	public startIntervals() {
-		console.log("STARTING INTERVALS");
 		let ags = this.activeGraphSetting;
 		let setAttribute = (value: number, func: (a: number, b: WorkspaceLeaf[]) => void) => {
 			let [low, high] = getScaleConversion(func.name, [0, 1]);
 			func(value * (high - low) + low, this.graphLeaves);
 		};
-		console.log("JEFF:", ags);
 		if (ags.centerForce) setAttribute(ags.centerForce, setCenterForce);
 		if (ags.linkForce) setAttribute(ags.linkForce, setLinkStrength);
 		if (ags.repelForce) setAttribute(ags.repelForce, setRepelStrength);
@@ -352,16 +351,15 @@ export default class LivingGraphPlugin extends Plugin {
 	}
 
 	public clearIntervals() {
-		console.log("CLEARING INTERVAL");
-		this.intervals.forEach(i => i.clear());
+		this.intervals?.forEach(i => i.clear());
 	}
 	public refreshLeaves() {
-		this.graphLeaves = this.app.workspace.getLeavesOfType("graph") ?? this.graphLeaves;
+		// this.graphLeaves = this.app.workspace.getLeavesOfType("graph") ?? this.graphLeaves;
+		this.graphLeaves = [].concat(this.app.workspace.getLeavesOfType("graph") ?? [])
+			.concat(this.settings.includeLocal ? this.app.workspace.getLeavesOfType("localgraph") ?? []: []);
 	}
 
 	async onload() {
-		// log 10 newlines to the console
-		console.log("\n\n\n\n\n\n\n\n\n\n");
 
 		await this.loadData();
 		this.addSettingTab(new LivingGraphSettingTab(this.app, this));
@@ -382,7 +380,6 @@ export default class LivingGraphPlugin extends Plugin {
 
 	public async onunload() {
 		this.clearIntervals();
-		await this.saveData();
 	}
 
 	public async loadData() {
@@ -395,14 +392,13 @@ export default class LivingGraphPlugin extends Plugin {
 
 	public updateIntervals(which?: Set<string>) {
 		which ??= new Set(this.settings.activeComposites);
-		if (this.intervals?.first().isActive()) this.clearIntervals();
+		this.clearIntervals();
+		this.refreshLeaves();
 		this.intervals = intervals.filter(c => {
 			let use = which.has(c.name);
 			if (use) this.activeGraphSetting = c;
 			return use;
 		}).map(c => c.intervals.map(i => new Interval(i, this))).flat();
-		// print this.intervals
-		console.log("\t\tHERE:", this.intervals);
 
 	}
 }
@@ -411,10 +407,12 @@ export default class LivingGraphPlugin extends Plugin {
 
 interface LivingGraphSettings {
 	activeComposites: string[],
+	includeLocal:boolean;
 }
 
 const DEFAULT_SETTINGS: LivingGraphSettings = {
 	activeComposites: [intervals[0].name],
+	includeLocal:true,
 };
 
 
@@ -432,6 +430,13 @@ class LivingGraphSettingTab extends PluginSettingTab {
 		containerEl.empty();
 
 		containerEl.createEl('h2', { text: 'Living Graph' });
+		let saveAndRestart = (()  =>  {
+			let wasActive = this.plugin.intervals?.first().isActive();
+			this.plugin.updateIntervals();
+			if (wasActive)
+				this.plugin.startIntervals();
+			this.plugin.saveData();
+		}).bind(this);
 
 		new Setting(containerEl)
 			.setName('Presets')
@@ -441,14 +446,22 @@ class LivingGraphSettingTab extends PluginSettingTab {
 				intervals.map(i => i.name).forEach(name => cb.addOption(name, name));
 				cb.onChange(async (name: string) => {
 					this.plugin.settings.activeComposites = [name];
-					let wasActive = this.plugin.intervals?.first().isActive();
-					this.plugin.updateIntervals();
-					if (wasActive) this.plugin.startIntervals();
-					this.plugin.saveData();
-					console.log("SAVING DATA:", name, this.plugin.settings);
+					saveAndRestart();
 				});
 				cb.setValue(this.plugin.settings.activeComposites[0]);
 			});
+
+		// add a toggle setting for include local
+		new Setting(containerEl)
+			.setName('Include Local Graphs')
+			.addToggle(cb => {
+				cb.onChange(async (value: boolean) => {
+					this.plugin.settings.includeLocal = value;
+					saveAndRestart();
+				});
+				cb.setValue(this.plugin.settings.includeLocal);
+			}
+		);
 
 	}
 }

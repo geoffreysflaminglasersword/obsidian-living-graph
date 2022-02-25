@@ -62,7 +62,6 @@ export function iscaledWave(x: number, min: number, max: number, delta: number, 
 
 // wave sumation, accepts any number of coefficient pairs and reduces them to p1.1*sin(x*p1.0)+p2.1*sin(x*p2.0)+...
 export function wave(func:any,x: number, coefficients: Coefs,normalize=true) {
-    console.log("DOG:",this._scale)
     if(normalize) x *= this._scale * 2;
     let sum = coefficients.reduce((a, b) => [a[0] + b[1] * func(x * b[0]), 0], [0, 0])[0];
     return normalize ? ((sum / this._scale) + 1) / 2 : sum;

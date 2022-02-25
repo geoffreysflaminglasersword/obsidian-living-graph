@@ -19,17 +19,19 @@ declare module "obsidian" {
 			autoRestored: boolean,
 			nodes: any[],
 		};
-		dataEngine: {
-			displayOptions: any,
-			forceOptions: {
-				optionListeners: {
-					centerStrength: (value: number) => void,
-					linkDistance: (value: number) => void,
-					linkStrength: (value: number) => void,
-					repelStrength: (value: number) => void,
-				},
-			},
-		};
+		dataEngine: Engine;
+		engine: Engine;
+	}
 
+	interface Engine {
+		displayOptions: any,
+		forceOptions: {
+			optionListeners: {
+				centerStrength: (value: number) => void,
+				linkDistance: (value: number) => void,
+				linkStrength: (value: number) => void,
+				repelStrength: (value: number) => void,
+			},
+		},
 	}
 }

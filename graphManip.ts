@@ -17,18 +17,21 @@ export function getScaleConversion(from: string, for_:[number, number]) {
 
 
 export function setCenterForce(centerForce: number, leaves: WorkspaceLeaf[]) {
-    leaves.forEach((leaf) => leaf.view.dataEngine.forceOptions.optionListeners.centerStrength(centerForce));
+    leaves.forEach((leaf) => getEngine(leaf).forceOptions.optionListeners.centerStrength(centerForce));
 }
 export function setLinkDistance(linkDistance: number, leaves: WorkspaceLeaf[]) {
-    leaves.forEach((leaf) => leaf.view.dataEngine.forceOptions.optionListeners.linkDistance(linkDistance));
+    leaves.forEach((leaf) => getEngine(leaf).forceOptions.optionListeners.linkDistance(linkDistance));
 }
 export function setLinkStrength(linkStrength: number, leaves: WorkspaceLeaf[]) {
-    leaves.forEach((leaf) => leaf.view.dataEngine.forceOptions.optionListeners.linkStrength(linkStrength));
+    leaves.forEach((leaf) => getEngine(leaf).forceOptions.optionListeners.linkStrength(linkStrength));
 }
 export function setRepelStrength(repelStrength: number, leaves: WorkspaceLeaf[]) {
-    leaves.forEach((leaf) => leaf.view.dataEngine.forceOptions.optionListeners.repelStrength(repelStrength));
+    leaves.forEach((leaf) => getEngine(leaf).forceOptions.optionListeners.repelStrength(repelStrength));
 }
 
+function getEngine(leaf: WorkspaceLeaf): any {
+    return leaf.view.dataEngine ?? leaf.view.engine;
+}
 
 // the interface CompositInterval holds several iIntervals and can create Intervals from them, also has a name and a description
 export interface iGraphSetting {
